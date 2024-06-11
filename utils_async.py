@@ -6,13 +6,24 @@ import datetime
 
 
 
+# description = """
+# Você é um analista de crises de marcas e trabalha para a marca Ambev. 
+# O usuário irá inserir uma lista de comentários de uma rede social associadas a ao contexto informado.
+# Seu trabalho é ler o comentário fazer os seguintes passos a partir do contexto dado:
+# 1. Faça a análise de sentimentos, informando o número de comentários relacionados a cada sentimento e formatando conforme o exemplo: "sentimento: qtd de comentátios; percentual"
+# 2. Crie 5 principais categorias baseado nas palavras chave mais importantes dos textos. Informe também a quantidade de comentários relacionados a cada palavra chave. Além disso Para cada categoria criada, gere um comentário curto que esteja no mesmo modelo dos comentários analisados e que sintetize a maior parte dos comentários relacionados a categoria. Formate conforme o exemplo a seguir: "categoria : palavras-chave : lista de palavras chave; \n comentário"
+# 3. Para cada palavra chave escolhida, gere um comentário curto que esteja no mesmo modelo dos comentários analisados
+# 4. gere o comentário médio baseado nos comentários.
+# """
+
 description = """
 Você é um analista de crises de marcas e trabalha para a marca Ambev. 
 O usuário irá inserir uma lista de comentários de uma rede social associadas a ao contexto informado.
 Seu trabalho é ler o comentário fazer os seguintes passos a partir do contexto dado:
-1. Faça a análise de sentimentos, informando o número de comentários relacionados a cada sentimento.
-2. Crie 5 principais categorias baseado nas palavras chave mais importantes dos textos. Informe também a quantidade de comentários relacionados a cada palavra chave.
-3. gere o comentário médio baseado nos comentários.
+1. Faça a análise de sentimentos, informando o número de comentários relacionados a cada sentimento e formatando conforme o exemplo: "sentimento: qtd de comentátios; percentual"
+2. Crie 5 principais categorias em formato de frase baseado nas palavras chave mais importantes dos textos. Informe também a quantidade de comentários relacionados a cada palavra chave além de uma pequena lista com algumas palavras chave relacionadas a categoria
+3. Para cada categoria escolhida, mostre um comentário de exemplo que se encaixe na cateogira
+4. gere o comentário médio baseado nos comentários.
 """
 
 
@@ -60,7 +71,7 @@ async def make_api_call_to_gpt(prompt, api_key):
             #"messages": [{"role": "user", "content": prompt}],
             "messages": prompt,
             "temperature": 0,
-            "max_tokens": 4096,
+            "max_tokens": 2000,
             "top_p": 1,
             "frequency_penalty": 0,
             "presence_penalty": 0
@@ -69,9 +80,11 @@ async def make_api_call_to_gpt(prompt, api_key):
         async with session.post('https://api.openai.com/v1/chat/completions',
                                 headers=headers, data=json.dumps(payload)) as response:
             if response.status == 200:
-                resp_json = await response.json()
+                resp_json = await response.json()                
                 return resp_json['choices'][0]['message']['content']
             else:
+                print(f"##### ERROR {response}")
+                print(json.dumps(payload))
                 return f"Error: {response.status}"
 
 
@@ -81,13 +94,21 @@ async def retorna_valor_final(results, api_key):
     texto_concatenado = ''
     
     prompt.append({'role': 'system',  'content' : """O usuário irá inserir uma lista de resultados de análises de redes sociais. Com base nesses resultados faça as seguintes tarefas:
-                    1. Faça a quantificação total dos sentimentos, mostrando somente o resultado final da soma juntamente com o percentual em relação ao total;
-                    2. crie 5 categorias a partir das palavras chave mais recorrentes que possam classificar os comentários a partir de uma frase, mostrando também a quantidade de comentários relacionados a cada categoria;
+                    1. Faça a quantificação total dos sentimentos, mostrando somente o resultado final da soma de todos os comentários analisados juntamente com o percentual em relação ao total;
+                    2. crie 5 categorias em formato de uma frase curta a partir de todas as categrias criadas, mostrando também a quantidade de comentários relacionados a cada categoria  além de uma pequena lista com algumas palavras chave relacionadas a categoria. Além disso Para cada categoria criada, gere um comentário curto que esteja no mesmo modelo dos comentários analisados e que sintetize a maior parte dos comentários relacionados a categoria; 
                     3. Gere um comentário médio que resuma as analises feitas. Utilize uma linguagem executiva;"""})    
+    
+    # prompt.append({'role': 'system',  'content' : """O usuário irá inserir uma lista de resultados de análises de redes sociais. Com base nesses resultados faça as seguintes tarefas:
+    #                 1. Faça a quantificação total dos sentimentos, informando o número de comentários relacionados a cada sentimento e formatando conforme o exemplo:
+    #                 "sentimento: qtd de comentátios; percentual"
+    #                 2. crie 5 categorias a partir das principais categorias das análises. Informe também a quantidade de comentários relacionados a cada categoria. Além disso Para cada categoria criada, gere um comentário curto que esteja no mesmo modelo dos comentários analisados e que sintetize a maior parte dos comentários relacionados a categoria. Formate conforme o exemplo a seguir:
+    #                 "categoria : palavras-chave : lista de palavras chave; comentário";
+    #                 3. Gere um comentário médio que resuma as analises feitas. Utilize uma linguagem executiva;"""})    
     for i in results:
         texto_concatenado = texto_concatenado + " \n "+i
     
     prompt.append({'role': 'user', 'content':f"lista de análises: {texto_concatenado}"})
+        
     
     resultado_final = await make_api_call_to_gpt(prompt, api_key)
     

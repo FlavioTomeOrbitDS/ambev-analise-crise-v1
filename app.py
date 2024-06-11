@@ -63,9 +63,9 @@ def main():
     
     
     inicializacao()
-    tab1, tab2 = st.sidebar.tabs(['Conversas', 'Configurações'])
-    tab_conversas(tab1)
-    tab_configuracoes(tab2)
+    # tab1, tab2 = st.sidebar.tabs(['Conversas', 'Configurações'])
+    # tab_conversas(tab1)
+    # tab_configuracoes(tab2)
     
     
     st.header('Ambev Crises')
@@ -91,7 +91,7 @@ def handle_uploaded_file(uploaded_file, limit=1000):
         df = pd.read_excel(uploaded_file)
         df = df.head(limit)
         if 'Texto' in df.columns:
-            st.dataframe(df)  # Mostra somente as primeiras 1000 linhas
+            st.dataframe(df['Texto'])  # Mostra somente as primeiras 1000 linhas
             return df
         else:
             st.error("A coluna 'Texto' não foi encontrada no arquivo.")
@@ -112,7 +112,8 @@ def inicializacao():
     if not 'conversa_atual' in st.session_state:
         st.session_state.conversa_atual = ''
     if not 'modelo' in st.session_state:
-        st.session_state.modelo = 'gpt-3.5-turbo'
+        st.session_state.modelo = 'gpt-4'
+        #st.session_state.modelo = 'gpt-3.5-turbo'
     if not 'api_key' in st.session_state:
         st.session_state.api_key = le_chave()
     
